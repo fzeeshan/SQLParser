@@ -1,0 +1,6 @@
+csvFilePath: C:\Users\sichez\Downloads\gsqlparser_dotnet_trial_3.2.2.5\demos\visitors\0-100\0-100.csv
+exeOutputFilePath: C:\Users\sichez\Downloads\gsqlparser_dotnet_trial_3.2.2.5\demos\visitors\0-100\output.txt
+parseOutputFilePath: C:\Users\sichez\Downloads\gsqlparser_dotnet_trial_3.2.2.5\demos\visitors\0-100\parsingOutput.txt
+filesDirectory: C:\Users\sichez\Downloads\gsqlparser_dotnet_trial_3.2.2.5\demos\visitors\0-100\
+exeCommand: C:\Users\sichez\Downloads\gsqlparser_dotnet_trial_3.2.2.5\demos\visitors\bin\Release\toXML.exe
+exeCommandConsumingString: /t mssql /s {}
