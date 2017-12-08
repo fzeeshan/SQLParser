@@ -108,6 +108,7 @@ def parsingXML(constantDictionary):
         # root = ET.fromstring(tmpStr)# this parsing will include xml namespace in front of all tags, will strip NS instead
         root = ParseXmlStripNs(tmpStr)
         root = root.find('statement')
+
         if isSelectStatement(root):
             XmlStripElements(root, constantDictionary['tagsToDiscard'])
         else:
@@ -117,13 +118,20 @@ def parsingXML(constantDictionary):
 
     flag = False
     tmpStr = ''
+    inputStringNumber = 0
+    finalXmlNumber = 0
+    finalWhereClauseNumber = 0
     for row in outputfile:
         if row == 'statementInXML.sichen - BEGIN\n':
             flag = True
             continue
         elif row == 'statementInXML.sichen - END\n':
+            inputStringNumber = inputStringNumber + 1
             try:
-                parsingOutputFile.write(parseXml(tmpStr))
+                parsingResult = parseXml(tmpStr)
+                parsingOutputFile.write(parsingResult)
+                finalXmlNumber = finalXmlNumber + 1
+                finalWhereClauseNumber = finalWhereClauseNumber + (parsingResult.find('where_clause')>0)
             except:
                 parsingOutputFile.write('CANNOT BE PARSED \n')
             # initialize flags
@@ -135,6 +143,9 @@ def parsingXML(constantDictionary):
         if flag:
             tmpStr = tmpStr + row
 
+    parsingOutputFile.write(
+        'Finally done: {} inputs, {} valid output, {} with where clause'.format(inputStringNumber, finalXmlNumber,
+                                                                                finalWhereClauseNumber))
     parsingOutputFile.close
 
 
