@@ -75,8 +75,43 @@ def parsingXML(constantDictionary):
 
     outputfile = open(constantDictionary['exeOutputFilePath'], 'r')
 
+    def ParseXmlStripNs(xmlStr):
+        import io
+        # instead of ET.fromstring(xml)
+        it = ET.iterparse(io.StringIO(xmlStr))
+        for _, el in it:
+            if '}' in el.tag:
+                el.tag = el.tag.split('}', 1)[1]  # strip all namespaces
+        return it.root
+
+    def isSelectStatement(statement):
+        return statement.items()[0][1] == 'sstselect';
+
+    # delete elements in xml in elemNameList
+    # e.g. <a><b><c></c></b></a> with ['b'] will get <a><c></c></a>
+    def XmlStripElements(parent, elemNameList):
+        index = 0
+        for child in parent.getchildren():
+            if child.tag in elemNameList:
+                # do replace recusrively until insert everything correctly
+                XmlStripElements(child, elemNameList)
+                parent.remove(child)
+                for element in child.getchildren():
+                    parent.insert(index, element)
+                    index = index + 1
+                    XmlStripElements(element, elemNameList)
+            else:
+                index = index + 1
+                XmlStripElements(child, elemNameList)
+
     def parseXml(tmpStr):
-        root = ET.fromstring(tmpStr)
+        # root = ET.fromstring(tmpStr)# this parsing will include xml namespace in front of all tags, will strip NS instead
+        root = ParseXmlStripNs(tmpStr)
+        root = root.find('statement')
+        if isSelectStatement(root):
+            XmlStripElements(root, constantDictionary['tagsToDiscard'])
+        else:
+            return 'NOT SELECT STATEMENT'
         # add whatever we want to do with the dictionary
         return ET.tostring(root).decode("utf-8")
 

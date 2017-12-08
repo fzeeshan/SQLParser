@@ -4,3 +4,6 @@ parseOutputFilePath: C:\Users\sichez\Downloads\gsqlparser_dotnet_trial_3.2.2.5\d
 filesDirectory: C:\Users\sichez\Downloads\gsqlparser_dotnet_trial_3.2.2.5\demos\visitors\0-100\
 exeCommand: C:\Users\sichez\Downloads\gsqlparser_dotnet_trial_3.2.2.5\demos\visitors\bin\Release\toXML.exe
 exeCommandConsumingString: /t mssql /s {}
+tagsToDiscard:
+            - 'query_expression'
+            - 'query_specification'
