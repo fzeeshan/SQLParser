@@ -87,12 +87,16 @@ def parsingXML(constantDictionary):
     def isSelectStatement(statement):
         return statement.items()[0][1] == 'sstselect';
 
+    def containInRegex(inputString, regexList):
+        import re
+        return re.match(("(" + ")|(".join(regexList) + ")"), inputString) != None
+
     # delete elements in xml in elemNameList
     # e.g. <a><b><c></c></b></a> with ['b'] will get <a><c></c></a>
     def XmlStripElements(parent, elemNameList):
         index = 0
         for child in parent.getchildren():
-            if child.tag in elemNameList:
+            if containInRegex(child.tag, elemNameList):
                 # do replace recusrively until insert everything correctly
                 XmlStripElements(child, elemNameList)
                 parent.remove(child)
@@ -104,6 +108,24 @@ def parsingXML(constantDictionary):
                 index = index + 1
                 XmlStripElements(child, elemNameList)
 
+    def FilterTableAttributes(parent, tableAttriTuples):
+        if tableAttriTuples is None:
+            return parent
+        else:
+            tableName = tableAttriTuples[0]
+            attribute = tableAttriTuples[1]
+            hasTable = False
+            hasAttribute = False
+            for it in parent.iter():
+                if (it.tag == tableName) or (it.text == tableName):
+                    hasTable = True
+                if (it.tag == tableName) or (it.text == tableName):
+                    hasAttribute = True
+
+        if (not hasTable) or (not hasAttribute):
+            return None
+        return parent
+
     def parseXml(tmpStr):
         # root = ET.fromstring(tmpStr)# this parsing will include xml namespace in front of all tags, will strip NS instead
         root = ParseXmlStripNs(tmpStr)
@@ -111,6 +133,7 @@ def parsingXML(constantDictionary):
 
         if isSelectStatement(root):
             XmlStripElements(root, constantDictionary['tagsToDiscard'])
+            root = FilterTableAttributes(root, constantDictionary['tableAttributeFilter'])
         else:
             return 'NOT SELECT STATEMENT'
         # add whatever we want to do with the dictionary
@@ -129,7 +152,11 @@ def parsingXML(constantDictionary):
             inputStringNumber = inputStringNumber + 1
             try:
                 parsingResult = parseXml(tmpStr)
-                parsingOutputFile.write(parsingResult)
+                if constantDictionary['includeNoWhere']:
+                    parsingOutputFile.write(parsingResult)
+                else:
+                    if parsingResult.find('where_clause') > 0:
+                        parsingOutputFile.write(parsingResult)
                 finalXmlNumber = finalXmlNumber + 1
                 finalWhereClauseNumber = finalWhereClauseNumber + (parsingResult.find('where_clause')>0)
             except:
