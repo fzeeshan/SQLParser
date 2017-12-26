@@ -4,7 +4,6 @@ import re
 
 import xml.etree.ElementTree as ET
 
-
 def main(yamlFileName):
     if yamlFileName is None:
         yamlFileName = r'C:\Users\sichez\PycharmProjects\SQLParser\configuration.yaml'
@@ -13,7 +12,8 @@ def main(yamlFileName):
     constantDictionary = parseYaml(yamlFileName)
 
     # pass configuration dictionary to runExe function to run exe fille and get output
-    runExe(constantDictionary)
+    if not constantDictionary['skipExe']:
+        runExe(constantDictionary)
 
     # consuming the output file, put xml into ElementTree structure and return the structure to xml file
     parsingXML(constantDictionary)
@@ -71,7 +71,7 @@ def runExe(constantDictionary):
 # go in XMLs results, parse XML and put all parse results in a new file
 def parsingXML(constantDictionary):
     parsingOutputPath = constantDictionary['parseOutputFilePath']
-    parsingOutputFile = open(parsingOutputPath, 'w')
+    parsingOutputFile = open(parsingOutputPath, 'wb')
 
     outputfile = open(constantDictionary['exeOutputFilePath'], 'r')
 
@@ -108,25 +108,32 @@ def parsingXML(constantDictionary):
                 index = index + 1
                 XmlStripElements(child, elemNameList)
 
+    def hasTableAttribute(parent, tableAttribute):
+        tableName = tableAttribute[0]
+        attribute = tableAttribute[1]
+        hasTable = False
+        hasAttribute = False
+        for it in parent.iter():
+            if (it.tag == tableName) or (it.text == tableName):
+                hasTable = True
+            if (it.tag == tableName) or (it.text == tableName):
+                hasAttribute = True
+        return (hasTable and hasAttribute)
+
     def FilterTableAttributes(parent, tableAttriTuples):
         if tableAttriTuples is None:
             return parent
         else:
-            tableName = tableAttriTuples[0]
-            attribute = tableAttriTuples[1]
-            hasTable = False
-            hasAttribute = False
-            for it in parent.iter():
-                if (it.tag == tableName) or (it.text == tableName):
-                    hasTable = True
-                if (it.tag == tableName) or (it.text == tableName):
-                    hasAttribute = True
-
-        if (not hasTable) or (not hasAttribute):
-            return None
-        return parent
+            result = False
+            for ta in tableAttriTuples:
+                result = result or hasTableAttribute(parent, ta)
+            if result:
+                return parent
+            else:
+                return None
 
     def parseXml(tmpStr):
+        import zlib
         # root = ET.fromstring(tmpStr)# this parsing will include xml namespace in front of all tags, will strip NS instead
         root = ParseXmlStripNs(tmpStr)
         root = root.find('statement')
@@ -137,7 +144,17 @@ def parsingXML(constantDictionary):
         else:
             return 'NOT SELECT STATEMENT'
         # add whatever we want to do with the dictionary
+
         return ET.tostring(root).decode("utf-8")
+
+    def writeStr(tmpString):
+        import zlib
+        if constantDictionary['compress']:
+            parsingOutputFile.write(zlib.compress(bytes(tmpString, 'UTF-8'), 9))
+        else:
+            parsingOutputFile.write(bytes(tmpString, 'UTF-8'))
+        return
+
 
     flag = False
     tmpStr = ''
@@ -153,14 +170,14 @@ def parsingXML(constantDictionary):
             try:
                 parsingResult = parseXml(tmpStr)
                 if constantDictionary['includeNoWhere']:
-                    parsingOutputFile.write(parsingResult)
+                    writeStr(parsingResult)
                 else:
                     if parsingResult.find('where_clause') > 0:
-                        parsingOutputFile.write(parsingResult)
+                        writeStr(parsingResult)
                 finalXmlNumber = finalXmlNumber + 1
                 finalWhereClauseNumber = finalWhereClauseNumber + (parsingResult.find('where_clause')>0)
             except:
-                parsingOutputFile.write('CANNOT BE PARSED \n')
+                writeStr('CANNOT BE PARSED \n')
             # initialize flags
             flag = False
             tmpStr = ''
@@ -171,8 +188,8 @@ def parsingXML(constantDictionary):
             tmpStr = tmpStr + row
 
     parsingOutputFile.write(
-        'Finally done: {} inputs, {} valid output, {} with where clause'.format(inputStringNumber, finalXmlNumber,
-                                                                                finalWhereClauseNumber))
+        bytes('Finally done: {} inputs, {} valid output, {} with where clause'.format(inputStringNumber, finalXmlNumber,
+                                                                                finalWhereClauseNumber), 'UTF-8'))
     parsingOutputFile.close
 
 

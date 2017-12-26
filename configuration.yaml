@@ -14,3 +14,5 @@ tagsToDiscard:
 includeNoWhere: False
 tableAttributeFilter:
             - ['PhotoTag', 'objID']
+compress: False
+skipExe: True
