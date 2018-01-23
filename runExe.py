@@ -4,6 +4,11 @@ import re
 
 import xml.etree.ElementTree as ET
 
+# copy a tree
+# XmlStripElements(test_select, elemNameList)
+#                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         test_select = copy.deepcopy(select)
+
+
 def main(yamlFileName):
     if yamlFileName is None:
         yamlFileName = r'C:\Users\sichez\PycharmProjects\SQLParser\configuration.yaml'
@@ -108,17 +113,42 @@ def parsingXML(constantDictionary):
                 index = index + 1
                 XmlStripElements(child, elemNameList)
 
+    def hasTableHelper(parent, tableName):
+        # if parent first children is table name
+        if (len(list(parent)) > 0) and (parent[0].tag=='table_name') and (parent[0][0].text == tableName):
+            # two children, see if alias exists
+            if (len(list(parent)) == 2) and (parent[1].tag=='alias_clause') and (parent[1][0][0].tag == 'full_name'):
+                return parent[1][0][0].text
+            # one child, see if table name matched
+            elif (len(list(parent))==1):
+                return tableName
+            else:
+                errStr = "hasTableHelper error: " + ET.tostring(parent).decode("utf-8")
+                raise Exception(errStr)
+        return None # return None if no table found
+
     def hasTableAttribute(parent, tableAttribute):
         tableName = tableAttribute[0]
         attribute = tableAttribute[1]
         hasTable = False
         hasAttribute = False
+        alias = ''
         for it in parent.iter():
-            if (it.tag == tableName) or (it.text == tableName):
+            if hasTableHelper(it, tableName) is not None:
+                # has table reference where table_name full_name = tableName
+                # set variable alias - table_reference.alias_clause
                 hasTable = True
-            if (it.tag == tableName) or (it.text == tableName):
+                alias = hasTableHelper(it, tableName)
+            if (it.tag == 'full_name') and (it.text == (alias + '.' + attribute)):
+                # find objectName where 1. full name is alias.<attribute> and part name is <attribute>
                 hasAttribute = True
         return (hasTable and hasAttribute)
+
+    def stripTableAttribute(parent, tableAttribute):
+        tableName = tableAttribute[0]
+        attribute = tableAttribute[1]
+        
+
 
     def FilterTableAttributes(parent, tableAttriTuples):
         if tableAttriTuples is None:
@@ -176,7 +206,8 @@ def parsingXML(constantDictionary):
                         writeStr(parsingResult)
                 finalXmlNumber = finalXmlNumber + 1
                 finalWhereClauseNumber = finalWhereClauseNumber + (parsingResult.find('where_clause')>0)
-            except:
+            except Exception as ex:
+                print(ex)
                 writeStr('CANNOT BE PARSED \n')
             # initialize flags
             flag = False
